@@ -5,8 +5,10 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.android.gms.ads.AdRequest;
@@ -27,6 +29,7 @@ public class ControlsFragment extends Fragment {
     private SeekBar delaySeekBar;
     private TextView delayTextView;
     private AdView adView;
+    private Switch longPressSwitch;
 
 
     public ControlsFragment() {
@@ -66,7 +69,7 @@ public class ControlsFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_controls, container, false);
         radioGroup = view.findViewById(R.id.actionsRadioGroup);
-        preferences = new DPreference(getActivity(),getString(R.string.preference_file_key));
+        preferences = new DPreference(getActivity(), getString(R.string.preference_file_key));
         radioGroup.check(preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next));
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
@@ -93,6 +96,15 @@ public class ControlsFragment extends Fragment {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+            }
+        });
+
+        longPressSwitch = view.findViewById(R.id.longPressSwitch);
+        longPressSwitch.setChecked(preferences.getPrefBoolean(getString(R.string.long_press_control), false));
+        longPressSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                preferences.setPrefBoolean(getString(R.string.long_press_control), isChecked);
             }
         });
 

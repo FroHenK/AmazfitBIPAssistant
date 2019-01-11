@@ -14,7 +14,6 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Handler;
@@ -22,6 +21,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 
@@ -39,10 +39,13 @@ public class ConnectionService extends Service {
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
     private boolean isOperational;
-    private Handler handler;
+    private Handler multipleClickHandler;
+    private Handler volumeControlHandler;
     private DPreference preferences;
     private Notification.Builder builder;
     private NotificationManager notificationManager;
+    private boolean inVolumeControl;
+    private AudioManager audio;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -79,8 +82,10 @@ public class ConnectionService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         preferences = new DPreference(this, getString(R.string.preference_file_key));
-        handler = new Handler();
+        multipleClickHandler = new Handler();
+        volumeControlHandler = new Handler();
         Log.i("kek", "service onCreate starting");
         createNotificationChannel();
         Intent notificationIntent = new Intent(this, MainActivity.class);
@@ -110,8 +115,28 @@ public class ConnectionService extends Service {
         initBluetooth();
     }
 
+    public static UUID convertFromInteger(int i) {
+        final long MSB = 0x0000000000001000L;
+        final long LSB = 0x800000805f9b34fbL;
+        long value = i & 0xFFFFFFFF;
+        return new UUID(MSB | (value << 32), LSB);
+    }
+
     private BluetoothDevice device;
     private int numberOfClicks = 0;
+
+    public static byte[] concat(byte[] first, byte[] second) {
+        byte[] result = Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, result, first.length, second.length);
+        return result;
+    }
+
+    private void makeCall(String message) {
+        BluetoothGattService service = bluetoothGatt.getService(convertFromInteger(0x1811));
+        BluetoothGattCharacteristic bluetoothGattCharacteristic = service.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
+        bluetoothGattCharacteristic.setValue(concat(new byte[]{3, 1}, message.getBytes()));
+        bluetoothGatt.writeCharacteristic(bluetoothGattCharacteristic);
+    }
 
     private void initBluetooth() {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -194,14 +219,37 @@ public class ConnectionService extends Service {
                 super.onCharacteristicChanged(gatt, characteristic);
                 Log.i("kek", "Received data: " + String.valueOf(characteristic.getValue()[0]));
 
-                if (characteristic.getValue()[0] == 11) {
+
+                if (preferences.getPrefBoolean(getString(R.string.long_press_control), false)) {
+                    if (characteristic.getValue()[0] == 11) {
+                        startVolumeControl();
+                    }
+                    if (inVolumeControl) {
+                        switch (characteristic.getValue()[0]) {
+                            case 4:
+                                inVolumeControl = false;
+                                multipleClickHandler.removeCallbacksAndMessages(null);
+                                break;
+                            case 7:
+                                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
+                                        AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+                                break;
+                            case 9:
+                                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
+                                        AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+                                break;
+
+                        }
+
+                        return;
+                    }
 
                 }
 
                 if (characteristic.getValue()[0] == 4) {
                     numberOfClicks++;
-                    handler.removeCallbacksAndMessages(null);
-                    handler.postDelayed(new Runnable() {
+                    multipleClickHandler.removeCallbacksAndMessages(null);
+                    multipleClickHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             Log.i("kek", "Number of clicks: " + numberOfClicks);
@@ -261,6 +309,19 @@ public class ConnectionService extends Service {
                 }
             }
         });
+    }
+
+    private void startVolumeControl() {
+        inVolumeControl = true;
+        makeCall("Hung Up- | Ignore+");
+        multipleClickHandler.removeCallbacksAndMessages(null);
+        multipleClickHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.i("kek", "volume control expired");
+                inVolumeControl = false;
+            }
+        }, 30000);
     }
 
     private void mediaButtonControl(int keycode) {
