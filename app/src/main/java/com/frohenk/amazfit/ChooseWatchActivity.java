@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -51,9 +52,13 @@ public class ChooseWatchActivity extends AppCompatActivity {
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
         ArrayList<String> rows = new ArrayList<>();
         for (BluetoothDevice device : bondedDevices)
-            if (device.getBluetoothClass().toString().equals("1f00")) {
-                devices.add(device);
-                rows.add(device.getName() + " | " + device.getAddress());
+            try {
+                if (device.getBluetoothClass().toString().equals("1f00")) {
+                    devices.add(device);
+                    rows.add(device.getName() + " | " + device.getAddress());
+                }
+            } catch (Exception e) {
+                Log.e("kek1", "some error", e);
             }
         ArrayAdapter<String> simpleAdapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1,
