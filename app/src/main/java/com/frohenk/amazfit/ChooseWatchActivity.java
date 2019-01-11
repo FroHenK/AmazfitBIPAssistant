@@ -51,7 +51,7 @@ public class ChooseWatchActivity extends AppCompatActivity {
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
         ArrayList<String> rows = new ArrayList<>();
         for (BluetoothDevice device : bondedDevices)
-            if (device.getName().contains("Amazfit Bip")) {
+            if (device.getBluetoothClass().toString().equals("1f00")) {
                 devices.add(device);
                 rows.add(device.getName() + " | " + device.getAddress());
             }
