@@ -305,7 +305,7 @@ public class ConnectionService extends Service {
                             }
                             numberOfClicks = 0;
                         }
-                    }, preferences.getPrefInt(getString(R.string.multiple_delay), 0) * DELAY_STEP + DELAY_STEP);
+                    }, preferences.getPrefInt(getString(R.string.multiple_delay), 1) * DELAY_STEP + DELAY_STEP);
                 }
             }
         });

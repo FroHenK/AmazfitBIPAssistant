@@ -79,8 +79,8 @@ public class ControlsFragment extends Fragment {
         });
         delaySeekBar = view.findViewById(R.id.delaySeekBar);
         delayTextView = view.findViewById(R.id.delayTextView);
-        delaySeekBar.setProgress(preferences.getPrefInt(getString(R.string.multiple_delay), 0));
-        delayTextView.setText("" + (ConnectionService.DELAY_STEP * (1 + preferences.getPrefInt(getString(R.string.multiple_delay), 0))) + " ms");
+        delaySeekBar.setProgress(preferences.getPrefInt(getString(R.string.multiple_delay), 1));
+        delayTextView.setText("" + (ConnectionService.DELAY_STEP * (1 + preferences.getPrefInt(getString(R.string.multiple_delay), 1))) + " ms");
         delaySeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
