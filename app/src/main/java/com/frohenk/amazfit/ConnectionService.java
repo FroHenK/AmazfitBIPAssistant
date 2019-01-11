@@ -93,14 +93,14 @@ public class ConnectionService extends Service {
             builder = new Notification.Builder(this, CHANNEL_ID);
             notification = builder
                     .setContentTitle("Disconnected")
-                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setSmallIcon(R.mipmap.cool_launcher)
                     .setContentIntent(pendingIntent)
                     .build();
         } else {
             builder = new Notification.Builder(this);
             notification = builder.setDefaults(Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND)
                     .setContentTitle("Disconnected")
-                    .setSmallIcon(R.drawable.ic_launcher_foreground).setVibrate(null)
+                    .setSmallIcon(R.mipmap.cool_launcher).setVibrate(null)
                     .setContentIntent(pendingIntent).setPriority(Notification.PRIORITY_MIN)
                     .build();
         }
@@ -195,7 +195,7 @@ public class ConnectionService extends Service {
                 Log.i("kek", "Received data: " + String.valueOf(characteristic.getValue()[0]));
 
                 if (characteristic.getValue()[0] == 11) {
-                    
+
                 }
 
                 if (characteristic.getValue()[0] == 4) {
