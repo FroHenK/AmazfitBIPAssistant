@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:shape="rectangle">
+
+    <corners android:radius="@dimen/abc_control_corner_material" />
+
+    <solid android:color="#222" />
+
+    <padding
+        android:bottom="@dimen/abc_button_padding_vertical_material"
+        android:left="@dimen/abc_button_padding_horizontal_material"
+        android:right="@dimen/abc_button_padding_horizontal_material"
+        android:top="@dimen/abc_button_padding_vertical_material" />
+</shape>

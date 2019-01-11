@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Amazfit BIP Assistant</string>
+    <string name="tab_text_1">Alarms</string>
+    <string name="tab_text_2">Controls</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="preference_file_key">AMAZFIT</string>
+    <string name="preferences_watch_address">watch_address</string>
+    <string name="multiple_click_action">actionkek</string>
+    <string name="multiple_delay">okmygeadisspinning</string>
+</resources>
