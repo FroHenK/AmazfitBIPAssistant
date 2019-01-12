@@ -33,6 +33,7 @@ import static android.bluetooth.BluetoothAdapter.STATE_DISCONNECTED;
 import static android.bluetooth.BluetoothAdapter.STATE_DISCONNECTING;
 
 public class ConnectionService extends Service {
+    private boolean isActive;
     public static final String CHANNEL_ID = "KEKID";
     public static final int NOTIFICATION_ID = 228;
     public static final int DELAY_STEP = 300;
@@ -54,7 +55,7 @@ public class ConnectionService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
+        isActive = true;
         Log.i("kek", "service received start command");
         return START_STICKY;
     }
@@ -81,7 +82,7 @@ public class ConnectionService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        isActive = true;
         audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         preferences = new DPreference(this, getString(R.string.preference_file_key));
         multipleClickHandler = new Handler();
@@ -172,15 +173,19 @@ public class ConnectionService extends Service {
                     case STATE_DISCONNECTING:
                         isOperational = false;
                         Log.i("kek", "device disconnecting");
-                        builder.setContentTitle("Disconnecting");
-                        notificationManager.notify(NOTIFICATION_ID, builder.build());
+                        if(isActive) {
+                            builder.setContentTitle("Disconnecting");
+                            notificationManager.notify(NOTIFICATION_ID, builder.build());
+                        }
                         break;
                     case STATE_DISCONNECTED:
                         Log.i("kek", "device disconnected");
                         isOperational = false;
-                        builder.setContentTitle("Disconnected");
-                        notificationManager.notify(NOTIFICATION_ID, builder.build());
-                        bluetoothGatt.connect();
+                        if(isActive) {
+                            builder.setContentTitle("Disconnected");
+                            notificationManager.notify(NOTIFICATION_ID, builder.build());
+                            bluetoothGatt.connect();
+                        }
                         break;
 
 
@@ -335,6 +340,8 @@ public class ConnectionService extends Service {
 
     @Override
     public void onDestroy() {
+        isActive = false;
+        bluetoothGatt.close();
         Log.i("kek", "service onDestroy");
         stopForeground(true);
         stopSelf();
