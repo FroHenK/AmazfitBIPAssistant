@@ -11,7 +11,8 @@
     <string name="preferences_watch_address">watch_address</string>
     <string name="multiple_click_action">actionkek</string>
     <string name="multiple_delay">okmygeadisspinning</string>
-    <!-- <string name="banner_id">ca-app-pub-5911662140305016/5042215561</string> -->
-    <string name="banner_id">ca-app-pub-3940256099942544/6300978111</string>
+     <string name="banner_id">ca-app-pub-5911662140305016/5042215561</string>
+    <!--<string name="banner_id">ca-app-pub-3940256099942544/6300978111</string>-->
     <string name="long_press_control">long_press_kek</string>
+    <string name="long_press_googass">googass_lol</string>
 </resources>

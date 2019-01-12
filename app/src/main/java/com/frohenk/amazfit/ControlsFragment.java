@@ -11,6 +11,7 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 
@@ -30,6 +31,7 @@ public class ControlsFragment extends Fragment {
     private TextView delayTextView;
     private AdView adView;
     private Switch longPressSwitch;
+    private Switch googleAssistantSwitch;
 
 
     public ControlsFragment() {
@@ -105,6 +107,23 @@ public class ControlsFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 preferences.setPrefBoolean(getString(R.string.long_press_control), isChecked);
+                if (isChecked) {
+                    preferences.setPrefBoolean(getString(R.string.long_press_googass), false);
+                    googleAssistantSwitch.setChecked(false);
+                }
+            }
+        });
+
+        googleAssistantSwitch = view.findViewById(R.id.googleAssistantSwitch);
+        googleAssistantSwitch.setChecked(preferences.getPrefBoolean(getString(R.string.long_press_googass), false));
+        googleAssistantSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                preferences.setPrefBoolean(getString(R.string.long_press_googass), isChecked);
+                if (isChecked) {
+                    preferences.setPrefBoolean(getString(R.string.long_press_control), false);
+                    longPressSwitch.setChecked(false);
+                }
             }
         });
 

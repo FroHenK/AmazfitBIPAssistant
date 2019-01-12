@@ -251,6 +251,12 @@ public class ConnectionService extends Service {
 
                 }
 
+
+                if (preferences.getPrefBoolean(getString(R.string.long_press_googass), false) && characteristic.getValue()[0] == 11) {
+                    startActivity(new Intent(Intent.ACTION_VOICE_COMMAND).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                }
+
+
                 if (characteristic.getValue()[0] == 4) {
                     numberOfClicks++;
                     multipleClickHandler.removeCallbacksAndMessages(null);
