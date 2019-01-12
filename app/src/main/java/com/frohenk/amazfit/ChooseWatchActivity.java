@@ -101,7 +101,7 @@ public class ChooseWatchActivity extends AppCompatActivity {
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
         for (BluetoothDevice device : bondedDevices)
             try {
-                if (device.getBluetoothClass().toString().contains("1f00")) {
+                if (device.getBluetoothClass().toString().contains("1f00") || device.getName().toLowerCase().contains("amazfit")) {
                     if (alreadyExplored.contains(device.getAddress()))
                         continue;
                     alreadyExplored.add(device.getAddress());
@@ -117,7 +117,7 @@ public class ChooseWatchActivity extends AppCompatActivity {
                         @Override
                         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                             if (status == BluetoothGatt.GATT_SUCCESS) {
-                                BluetoothGattService service1 = gatt.getService(convertFromInteger(0x1811));
+                                BluetoothGattService service1 = gatt.getService(UUID.fromString("00001811-0000-1000-8000-00805f9b34fb"));
                                 if (service1 == null)
                                     return;
                                 if (service1.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb")) == null)
@@ -129,7 +129,7 @@ public class ChooseWatchActivity extends AppCompatActivity {
                                 BluetoothGattCharacteristic characteristic = service2.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
                                 if (characteristic == null)
                                     return;
-                                if (characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")) == null)
+                                if (characteristic.getDescriptors().isEmpty())
                                     return;
                                 devices.add(gatt.getDevice());
                                 runOnUiThread(new Runnable() {

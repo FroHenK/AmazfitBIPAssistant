@@ -173,7 +173,7 @@ public class ConnectionService extends Service {
                     case STATE_DISCONNECTING:
                         isOperational = false;
                         Log.i("kek", "device disconnecting");
-                        if(isActive) {
+                        if (isActive) {
                             builder.setContentTitle("Disconnecting");
                             notificationManager.notify(NOTIFICATION_ID, builder.build());
                         }
@@ -181,7 +181,7 @@ public class ConnectionService extends Service {
                     case STATE_DISCONNECTED:
                         Log.i("kek", "device disconnected");
                         isOperational = false;
-                        if(isActive) {
+                        if (isActive) {
                             builder.setContentTitle("Disconnected");
                             notificationManager.notify(NOTIFICATION_ID, builder.build());
                             bluetoothGatt.connect();
@@ -202,7 +202,7 @@ public class ConnectionService extends Service {
                 gatt.setCharacteristicNotification(characteristic, true);
 
                 System.out.println(characteristic);
-                BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+                BluetoothGattDescriptor descriptor = characteristic.getDescriptors().get(0);
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 gatt.readCharacteristic(characteristic);
                 gatt.writeDescriptor(descriptor);
