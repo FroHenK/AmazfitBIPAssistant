@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothHeadset;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
@@ -57,6 +58,8 @@ public class ChooseWatchActivity extends AppCompatActivity {
         devices = new ArrayList<>();
         alreadyExplored = new HashSet<>();
         refresh();
+
+
     }
 
     Set<String> alreadyExplored;
@@ -101,6 +104,7 @@ public class ChooseWatchActivity extends AppCompatActivity {
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
         for (BluetoothDevice device : bondedDevices)
             try {
+
                 if (device.getBluetoothClass().toString().contains("1f00") || device.getName().toLowerCase().contains("amazfit")) {
                     if (alreadyExplored.contains(device.getAddress()))
                         continue;
@@ -131,6 +135,26 @@ public class ChooseWatchActivity extends AppCompatActivity {
                                     return;
                                 if (characteristic.getDescriptors().isEmpty())
                                     return;
+
+                                BluetoothGattCharacteristic charNotification = null;
+                                BluetoothGattCharacteristic charCallback = null;
+
+                                for (BluetoothGattService serv : gatt.getServices()) {
+                                    if (serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb")) != null) {
+                                        charNotification = serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
+                                    }
+                                    if (serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700")) != null) {
+                                        charCallback = serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
+                                    }
+                                }
+                                if (charNotification == null)
+                                    return;
+                                if (charCallback == null)
+                                    return;
+                                if (charCallback.getDescriptors().isEmpty())
+                                    return;
+
+
                                 devices.add(gatt.getDevice());
                                 runOnUiThread(new Runnable() {
                                     @Override

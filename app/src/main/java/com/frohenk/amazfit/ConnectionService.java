@@ -133,10 +133,15 @@ public class ConnectionService extends Service {
     }
 
     private void makeCall(String message) {
-        BluetoothGattService service = bluetoothGatt.getService(convertFromInteger(0x1811));
-        BluetoothGattCharacteristic bluetoothGattCharacteristic = service.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
-        bluetoothGattCharacteristic.setValue(concat(new byte[]{3, 1}, message.getBytes()));
-        bluetoothGatt.writeCharacteristic(bluetoothGattCharacteristic);
+
+        for (BluetoothGattService serv : bluetoothGatt.getServices()) {
+            BluetoothGattCharacteristic characteristic = serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
+            if (characteristic != null) {
+                characteristic.setValue(concat(new byte[]{3, 1}, message.getBytes()));
+                bluetoothGatt.writeCharacteristic(characteristic);
+            }
+        }
+
     }
 
     private void initBluetooth() {
@@ -150,7 +155,8 @@ public class ConnectionService extends Service {
             return;
         bluetoothGatt = device.connectGatt(this, true, new BluetoothGattCallback() {
 
-            private BluetoothGattCharacteristic characteristic;
+
+            private String charUuid = "00000010-0000-3512-2118-0009af100700";
 
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -160,7 +166,7 @@ public class ConnectionService extends Service {
                     case STATE_CONNECTED:
                         Log.i("kek", "device connected");
                         gatt.discoverServices();
-                        isOperational = true;
+
                         builder.setContentTitle("Connected");
                         notificationManager.notify(NOTIFICATION_ID, builder.build());
                         break;
@@ -197,15 +203,26 @@ public class ConnectionService extends Service {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 super.onServicesDiscovered(gatt, status);
                 isOperational = true;
-                BluetoothGattService service = gatt.getService(UUID.fromString("0000fee0-0000-1000-8000-00805f9b34fb"));
-                characteristic = service.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
-                gatt.setCharacteristicNotification(characteristic, true);
 
-                System.out.println(characteristic);
-                BluetoothGattDescriptor descriptor = characteristic.getDescriptors().get(0);
-                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                gatt.readCharacteristic(characteristic);
-                gatt.writeDescriptor(descriptor);
+                BluetoothGattCharacteristic charNotification = null;
+                BluetoothGattCharacteristic charCallback = null;
+
+                for (BluetoothGattService serv : gatt.getServices()) {
+                    if (serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700")) != null) {
+                        charCallback = serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
+
+                        gatt.setCharacteristicNotification(charCallback, true);
+
+                        for (BluetoothGattDescriptor descriptor : charCallback.getDescriptors()) {
+                            Log.i("kek", serv.getUuid().toString() + " | " + charCallback.getUuid().toString() + " | " + descriptor.getUuid().toString());
+                            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                            gatt.writeDescriptor(descriptor);
+                        }
+                    }
+                }
+
+
+                Log.i("kek", "services successfully discovered");
             }
 
             @Override
@@ -222,6 +239,8 @@ public class ConnectionService extends Service {
             @Override
             public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
                 super.onCharacteristicChanged(gatt, characteristic);
+                if (!characteristic.getUuid().toString().equalsIgnoreCase(charUuid))
+                    return;
                 Log.i("kek", "Received data: " + String.valueOf(characteristic.getValue()[0]));
 
 
