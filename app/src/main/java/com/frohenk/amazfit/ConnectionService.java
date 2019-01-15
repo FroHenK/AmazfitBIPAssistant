@@ -63,6 +63,13 @@ public class ConnectionService extends Service {
         Log.i("kek", "service received start command");
         if (bluetoothGatt != null)
             bluetoothGatt.connect();
+        else {
+            try {
+                initBluetooth();
+            } catch (Exception e) {
+                Log.e("kek", "some error while reconnecting BT init", e);
+            }
+        }
         return START_STICKY;
     }
 
@@ -119,7 +126,11 @@ public class ConnectionService extends Service {
         notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         ;
         startForeground(NOTIFICATION_ID, notification);
-        initBluetooth();
+        try {
+            initBluetooth();
+        } catch (Exception e) {
+            Log.e("kek", "some error while BT init", e.getCause());
+        }
     }
 
     public static UUID convertFromInteger(int i) {
@@ -143,6 +154,7 @@ public class ConnectionService extends Service {
         for (BluetoothGattService serv : bluetoothGatt.getServices()) {
             BluetoothGattCharacteristic characteristic = serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
             if (characteristic != null) {
+                Log.i("kek", "calling on: " + serv.getUuid() + " | " + characteristic.getUuid());
                 characteristic.setValue(concat(new byte[]{3, 1}, message.getBytes()));
                 bluetoothGatt.writeCharacteristic(characteristic);
             }
@@ -154,11 +166,12 @@ public class ConnectionService extends Service {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
 
-        for (BluetoothDevice device : bondedDevices)
-            if (device.getAddress().equals(preferences.getPrefString(getString(R.string.preferences_watch_address), "")))
-                this.device = device;
+
+        this.device = bluetoothAdapter.getRemoteDevice(preferences.getPrefString(getString(R.string.preferences_watch_address), ""));
+        Log.i("kek", "connecting to: " + preferences.getPrefString(getString(R.string.preferences_watch_address), "") + " | " + device);
         if (this.device == null)
             return;
+
         bluetoothGatt = device.connectGatt(this, true, new BluetoothGattCallback() {
 
 
