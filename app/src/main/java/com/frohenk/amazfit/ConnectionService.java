@@ -61,6 +61,7 @@ public class ConnectionService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         isActive = true;
         Log.i("kek", "service received start command");
+        bluetoothGatt.connect();
         return START_STICKY;
     }
 

@@ -104,8 +104,10 @@ public class ChooseWatchActivity extends AppCompatActivity {
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
         for (BluetoothDevice device : bondedDevices)
             try {
+                if (device.getType() == BluetoothDevice.DEVICE_TYPE_CLASSIC)
+                    continue;
 
-                if (device.getBluetoothClass().toString().contains("1f00") || device.getName().toLowerCase().contains("amazfit")) {
+                if (device.getBluetoothClass().toString().contains("1f00") || device.getName().toLowerCase().contains("amazfit") || device.getName().toLowerCase().contains("bip") || device.getName().toLowerCase().contains("watch")) {
                     if (alreadyExplored.contains(device.getAddress()))
                         continue;
                     alreadyExplored.add(device.getAddress());
@@ -121,21 +123,6 @@ public class ChooseWatchActivity extends AppCompatActivity {
                         @Override
                         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                             if (status == BluetoothGatt.GATT_SUCCESS) {
-                                BluetoothGattService service1 = gatt.getService(UUID.fromString("00001811-0000-1000-8000-00805f9b34fb"));
-                                if (service1 == null)
-                                    return;
-                                if (service1.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb")) == null)
-                                    return;
-
-                                BluetoothGattService service2 = gatt.getService(UUID.fromString("0000fee0-0000-1000-8000-00805f9b34fb"));
-                                if (service2 == null)
-                                    return;
-                                BluetoothGattCharacteristic characteristic = service2.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
-                                if (characteristic == null)
-                                    return;
-                                if (characteristic.getDescriptors().isEmpty())
-                                    return;
-
                                 BluetoothGattCharacteristic charNotification = null;
                                 BluetoothGattCharacteristic charCallback = null;
 
