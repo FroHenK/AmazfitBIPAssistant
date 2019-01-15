@@ -2,6 +2,7 @@ package com.frohenk.amazfit;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -128,8 +129,17 @@ public class ControlsFragment extends Fragment {
         });
 
         adView = view.findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
+        AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice("EA6F5EDBBC1D0C4A6088CB46CD5D9FE1")
+                .build();
         adView.loadAd(adRequest);
+        adView.setAdListener(new AdListener() {
+            @Override
+            public void onAdFailedToLoad(int i) {
+                Log.i("Ads", "no AdMob ad :(");
+            }
+        });
+
 
         return view;
     }

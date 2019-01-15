@@ -6,30 +6,22 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import android.bluetooth.BluetoothHeadset;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import me.dozen.dpreference.DPreference;
-
-import static com.frohenk.amazfit.ConnectionService.convertFromInteger;
 
 public class ChooseWatchActivity extends AppCompatActivity {
 
@@ -70,7 +62,6 @@ public class ChooseWatchActivity extends AppCompatActivity {
         for (BluetoothGatt bluetoothGatt : connections) {
             bluetoothGatt.close();
         }
-        BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
 
         connections.clear();
     }

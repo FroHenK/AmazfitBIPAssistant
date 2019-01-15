@@ -103,14 +103,14 @@ public class ConnectionService extends Service {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             builder = new Notification.Builder(this, CHANNEL_ID);
             notification = builder
-                    .setContentTitle("Disconnected")
+                    .setContentTitle(getString(R.string.status_disconnected))
                     .setSmallIcon(R.mipmap.cool_launcher)
                     .setContentIntent(pendingIntent)
                     .build();
         } else {
             builder = new Notification.Builder(this);
             notification = builder.setDefaults(Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND)
-                    .setContentTitle("Disconnected")
+                    .setContentTitle(getString(R.string.status_disconnected))
                     .setSmallIcon(R.mipmap.cool_launcher).setVibrate(null)
                     .setContentIntent(pendingIntent).setPriority(Notification.PRIORITY_MIN)
                     .build();
@@ -172,20 +172,20 @@ public class ConnectionService extends Service {
                         Log.i("kek", "device connected");
                         gatt.discoverServices();
 
-                        builder.setContentTitle("Connected");
+                        builder.setContentTitle(getString(R.string.status_connected));
                         notificationManager.notify(NOTIFICATION_ID, builder.build());
                         break;
                     case STATE_CONNECTING:
                         Log.i("kek", "device connecting");
                         isOperational = false;
-                        builder.setContentTitle("Connecting");
+                        builder.setContentTitle(getString(R.string.status_connecting));
                         notificationManager.notify(NOTIFICATION_ID, builder.build());
                         break;
                     case STATE_DISCONNECTING:
                         isOperational = false;
                         Log.i("kek", "device disconnecting");
                         if (isActive) {
-                            builder.setContentTitle("Disconnecting");
+                            builder.setContentTitle(getString(R.string.status_disconnecting));
                             notificationManager.notify(NOTIFICATION_ID, builder.build());
                         }
                         break;
@@ -193,7 +193,7 @@ public class ConnectionService extends Service {
                         Log.i("kek", "device disconnected");
                         isOperational = false;
                         if (isActive) {
-                            builder.setContentTitle("Disconnected");
+                            builder.setContentTitle(getString(R.string.status_disconnected));
                             notificationManager.notify(NOTIFICATION_ID, builder.build());
                             bluetoothGatt.connect();
                         }

@@ -17,4 +17,12 @@
     <string name="long_press_googass">googass_lol</string>
     <string name="num_uses">num_uses</string>
     <string name="can_rate">can_rate</string>
+    <string name="rate_app_question">Would you like to rate the app?</string>
+    <string name="rate_later">Later</string>
+    <string name="rate_rate">Rate</string>
+    <string name="rate_never">Never!</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_disconnecting">Disconnecting</string>
+    <string name="status_connecting">Connecting</string>
+    <string name="status_connected">Connected</string>
 </resources>
