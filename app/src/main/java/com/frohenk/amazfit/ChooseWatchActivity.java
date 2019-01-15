@@ -22,6 +22,8 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.google.firebase.analytics.FirebaseAnalytics;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,11 +40,13 @@ public class ChooseWatchActivity extends AppCompatActivity {
     private BluetoothLeScanner bluetoothLeScanner;
     private ScanCallback scanCallback;
     private EditText bluetoothAddressText;
+    private FirebaseAnalytics firebaseAnalytics;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_choose_watch);
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this);
         nothingFoundText = findViewById(R.id.nothingFoundTextView);
         refreshButton = findViewById(R.id.refreshButton);
         watchesList = findViewById(R.id.watchesList);
@@ -122,10 +126,18 @@ public class ChooseWatchActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 DPreference preferences = new DPreference(ChooseWatchActivity.this, getString(R.string.preference_file_key));
-                preferences.setPrefString(getString(R.string.preferences_watch_address), devices.get(position).getAddress());
+                BluetoothDevice device = devices.get(position);
+                preferences.setPrefString(getString(R.string.preferences_watch_address), device.getAddress());
                 disconnectAll();
                 Intent intent = new Intent(ChooseWatchActivity.this, MainActivity.class);
                 startActivity(intent);
+
+                Bundle bundle = new Bundle();
+                bundle.putInt("device_type", device.getType());
+                bundle.putString("device_bluetooth_class", device.getBluetoothClass().toString());
+                bundle.putString("device_name", device.getName());
+                firebaseAnalytics.logEvent("device_chosen", bundle);
+
                 finish();
             }
         });

@@ -18,6 +18,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.google.android.gms.ads.MobileAds;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import me.dozen.dpreference.DPreference;
 
@@ -38,12 +39,13 @@ public class MainActivity extends AppCompatActivity {
      */
     private ViewPager mViewPager;
     private FloatingActionButton fab;
+    private FirebaseAnalytics firebaseAnalytics;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this);
         MobileAds.initialize(this, "ca-app-pub-5911662140305016~6930012303");
 
         final DPreference preference = new DPreference(this, getString(R.string.preference_file_key));
@@ -98,6 +100,9 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     preference.setPrefInt(getString(R.string.num_uses), 0);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("action", "later");
+                    firebaseAnalytics.logEvent("rating_action", bundle);
                 }
             });
             builder.setPositiveButton(getString(R.string.rate_rate), new DialogInterface.OnClickListener() {
@@ -111,6 +116,9 @@ public class MainActivity extends AppCompatActivity {
                     goToMarket.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY |
                             Intent.FLAG_ACTIVITY_NEW_DOCUMENT |
                             Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("action", "rate");
+                    firebaseAnalytics.logEvent("rating_action", bundle);
                     try {
                         startActivity(goToMarket);
                     } catch (ActivityNotFoundException e) {
@@ -123,6 +131,9 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     preference.setPrefBoolean(getString(R.string.can_rate), false);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("action", "never");
+                    firebaseAnalytics.logEvent("rating_action", bundle);
                 }
             });
 

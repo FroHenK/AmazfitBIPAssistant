@@ -16,10 +16,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.KeyEvent;
+
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -47,9 +50,12 @@ public class ConnectionService extends Service {
     private NotificationManager notificationManager;
     private boolean inVolumeControl;
     private AudioManager audio;
+    private FirebaseAnalytics firebaseAnalytics;
 
     private void incrementActionsCounter() {
-        preferences.setPrefInt(getString(R.string.num_uses), new DPreference(this, getString(R.string.preference_file_key)).getPrefInt(getString(R.string.num_uses), 0) + 1);
+        int counter = new DPreference(this, getString(R.string.preference_file_key)).getPrefInt(getString(R.string.num_uses), 0) + 1;
+        preferences.setPrefInt(getString(R.string.num_uses), counter);
+        firebaseAnalytics.setUserProperty("actions_counter", String.valueOf(counter));
     }
 
     @Override
@@ -95,6 +101,7 @@ public class ConnectionService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this);
         isActive = true;
         audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         preferences = new DPreference(this, getString(R.string.preference_file_key));
@@ -158,6 +165,9 @@ public class ConnectionService extends Service {
                 characteristic.setValue(concat(new byte[]{3, 1}, message.getBytes()));
                 bluetoothGatt.writeCharacteristic(characteristic);
             }
+            Bundle bundle = new Bundle();
+            bundle.putString("device_name", device.getName());
+            firebaseAnalytics.logEvent("emulated_call", bundle);
         }
 
     }
@@ -379,6 +389,12 @@ public class ConnectionService extends Service {
     }
 
     private void mediaButtonControl(int keycode) {
+
+        Bundle bundle = new Bundle();
+        bundle.putString("device_name", device.getName());
+        bundle.putString("keycode", String.valueOf(keycode));
+        firebaseAnalytics.logEvent("media_action", bundle);
+
         KeyEvent ky_down = new KeyEvent(KeyEvent.ACTION_DOWN, keycode);
         KeyEvent ky_up = new KeyEvent(KeyEvent.ACTION_UP, keycode);
         AudioManager am = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
