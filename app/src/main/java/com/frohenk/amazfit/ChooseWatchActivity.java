@@ -6,13 +6,19 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -29,7 +35,9 @@ public class ChooseWatchActivity extends AppCompatActivity {
     private TextView refreshButton;
     private ListView watchesList;
     private BluetoothAdapter bluetoothAdapter;
-
+    private BluetoothLeScanner bluetoothLeScanner;
+    private ScanCallback scanCallback;
+    private EditText bluetoothAddressText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,19 +47,55 @@ public class ChooseWatchActivity extends AppCompatActivity {
         refreshButton = findViewById(R.id.refreshButton);
         watchesList = findViewById(R.id.watchesList);
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+        scanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                super.onScanResult(callbackType, result);
+                if (result.getDevice() != null)
+                    onDeviceDiscovered(result.getDevice());
+            }
+        };
         refreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 refresh();
             }
         });
+        bluetoothAddressText = findViewById(R.id.bluetoothAddressEditText);
+        bluetoothAddressText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                tryFromForm();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
         connections = new ArrayList<>();
         devices = new ArrayList<>();
         alreadyExplored = new HashSet<>();
         refresh();
 
 
+    }
+
+    private void tryFromForm() {
+        String address = bluetoothAddressText.getText().toString().toUpperCase();
+        try {
+            BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+            Log.i("kek", "device: " + device);
+            onDeviceDiscovered(device);
+        } catch (Exception e) {
+            Log.v("kek", "try from form error ", e);
+        }
     }
 
     Set<String> alreadyExplored;
@@ -93,59 +137,67 @@ public class ChooseWatchActivity extends AppCompatActivity {
         //devices.clear();
         refreshList();
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
+        bluetoothLeScanner.stopScan(scanCallback);
+        bluetoothLeScanner.startScan(scanCallback);
+        tryFromForm();
         for (BluetoothDevice device : bondedDevices)
             try {
                 if (device.getType() == BluetoothDevice.DEVICE_TYPE_CLASSIC)
                     continue;
 
-                if (device.getBluetoothClass().toString().contains("1f00") || device.getName().toLowerCase().contains("amazfit") || device.getName().toLowerCase().contains("bip") || device.getName().toLowerCase().contains("watch")) {
-                    if (alreadyExplored.contains(device.getAddress()))
-                        continue;
-                    alreadyExplored.add(device.getAddress());
-
-                    device.connectGatt(this, true, new BluetoothGattCallback() {
-                        @Override
-                        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                            if (newState == BluetoothAdapter.STATE_CONNECTED) {
-                                gatt.discoverServices();
-                            }
-                        }
-
-                        @Override
-                        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                            if (status == BluetoothGatt.GATT_SUCCESS) {
-                                BluetoothGattCharacteristic charNotification = null;
-                                BluetoothGattCharacteristic charCallback = null;
-
-                                for (BluetoothGattService serv : gatt.getServices()) {
-                                    if (serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb")) != null) {
-                                        charNotification = serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
-                                    }
-                                    if (serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700")) != null) {
-                                        charCallback = serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
-                                    }
-                                }
-                                if (charNotification == null)
-                                    return;
-                                if (charCallback == null)
-                                    return;
-                                if (charCallback.getDescriptors().isEmpty())
-                                    return;
-
-
-                                devices.add(gatt.getDevice());
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        refreshList();
-                                    }
-                                });
-                            }
-                        }
-                    });
-                }
+                if (onDeviceDiscovered(device)) continue;
             } catch (Exception e) {
                 Log.e("kek1", "some error", e);
             }
+    }
+
+    private boolean onDeviceDiscovered(BluetoothDevice device) {
+        if (device.getBluetoothClass().toString().contains("1f00") || device.getName().toLowerCase().contains("band") || device.getName().toLowerCase().contains("amazfit") || device.getName().toLowerCase().contains("bip") || device.getName().toLowerCase().contains("watch")) {
+            if (alreadyExplored.contains(device.getAddress()))
+                return true;
+            alreadyExplored.add(device.getAddress());
+
+            device.connectGatt(this, true, new BluetoothGattCallback() {
+                @Override
+                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                    if (newState == BluetoothAdapter.STATE_CONNECTED) {
+                        gatt.discoverServices();
+                    }
+                }
+
+                @Override
+                public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        BluetoothGattCharacteristic charNotification = null;
+                        BluetoothGattCharacteristic charCallback = null;
+
+                        for (BluetoothGattService serv : gatt.getServices()) {
+                            if (serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb")) != null) {
+                                charNotification = serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
+                            }
+                            if (serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700")) != null) {
+                                charCallback = serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
+                            }
+                        }
+                        if (charNotification == null)
+                            return;
+                        if (charCallback == null)
+                            return;
+                        if (charCallback.getDescriptors().isEmpty())
+                            return;
+
+
+                        devices.add(gatt.getDevice());
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                refreshList();
+                            }
+                        });
+                    }
+                }
+            });
+        }
+        return false;
     }
 }

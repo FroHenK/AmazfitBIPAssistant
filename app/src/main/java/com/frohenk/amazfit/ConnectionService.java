@@ -61,7 +61,8 @@ public class ConnectionService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         isActive = true;
         Log.i("kek", "service received start command");
-        bluetoothGatt.connect();
+        if (bluetoothGatt != null)
+            bluetoothGatt.connect();
         return START_STICKY;
     }
 
@@ -376,7 +377,8 @@ public class ConnectionService extends Service {
     @Override
     public void onDestroy() {
         isActive = false;
-        bluetoothGatt.close();
+        if (bluetoothGatt != null)
+            bluetoothGatt.close();
         Log.i("kek", "service onDestroy");
         stopForeground(true);
         stopSelf();
