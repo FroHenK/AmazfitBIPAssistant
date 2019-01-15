@@ -1,6 +1,10 @@
 package com.frohenk.amazfit;
 
+import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
@@ -46,7 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
         MobileAds.initialize(this, "ca-app-pub-5911662140305016~6930012303");
 
-        if (new DPreference(this,getString(R.string.preference_file_key)).getPrefString(getString(R.string.preferences_watch_address),"").isEmpty()) {
+        final DPreference preference = new DPreference(this, getString(R.string.preference_file_key));
+        if (preference.getPrefString(getString(R.string.preferences_watch_address), "").isEmpty()) {
             Intent intent = new Intent(this, ChooseWatchActivity.class);
             startActivity(intent);
             finish();
@@ -90,6 +95,43 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        if (preference.getPrefInt(getString(R.string.num_uses), 0) >= 100 && preference.getPrefBoolean(getString(R.string.can_rate), true)) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Would you like to rate the app?");
+            builder.setNeutralButton("Later", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    preference.setPrefInt(getString(R.string.num_uses), 0);
+                }
+            });
+            builder.setPositiveButton("Rate", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    preference.setPrefBoolean(getString(R.string.can_rate), false);
+                    Uri uri = Uri.parse("market://details?id=" + MainActivity.this.getPackageName());
+                    Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
+                    // To count with Play market backstack, After pressing back button,
+                    // to taken back to our application, we need to add following flags to intent.
+                    goToMarket.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY |
+                            Intent.FLAG_ACTIVITY_NEW_DOCUMENT |
+                            Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+                    try {
+                        startActivity(goToMarket);
+                    } catch (ActivityNotFoundException e) {
+                        startActivity(new Intent(Intent.ACTION_VIEW,
+                                Uri.parse("http://play.google.com/store/apps/details?id=" + MainActivity.this.getPackageName())));
+                    }
+                }
+            });
+            builder.setNegativeButton("Never!", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    preference.setPrefBoolean(getString(R.string.can_rate), false);
+                }
+            });
+
+            builder.show();
+        }
     }
 
 
@@ -109,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_disconnect) {
-            DPreference preferences = new DPreference(MainActivity.this,getString(R.string.preference_file_key));
+            DPreference preferences = new DPreference(MainActivity.this, getString(R.string.preference_file_key));
             preferences.removePreference(getString(R.string.preferences_watch_address));
             Intent intent = new Intent(MainActivity.this, ChooseWatchActivity.class);
             startActivity(intent);

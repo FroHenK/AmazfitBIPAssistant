@@ -48,6 +48,10 @@ public class ConnectionService extends Service {
     private boolean inVolumeControl;
     private AudioManager audio;
 
+    private void incrementActionsCounter() {
+        preferences.setPrefInt(getString(R.string.num_uses), new DPreference(this, getString(R.string.preference_file_key)).getPrefInt(getString(R.string.num_uses), 0) + 1);
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -257,10 +261,12 @@ public class ConnectionService extends Service {
                             case 7:
                                 audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
                                         AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+                                incrementActionsCounter();
                                 break;
                             case 9:
                                 audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
                                         AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+                                incrementActionsCounter();
                                 break;
 
                         }
@@ -272,6 +278,7 @@ public class ConnectionService extends Service {
 
 
                 if (preferences.getPrefBoolean(getString(R.string.long_press_googass), false) && characteristic.getValue()[0] == 11) {
+                    incrementActionsCounter();
                     startActivity(new Intent(Intent.ACTION_VOICE_COMMAND).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 }
 
@@ -283,6 +290,8 @@ public class ConnectionService extends Service {
                         @Override
                         public void run() {
                             Log.i("kek", "Number of clicks: " + numberOfClicks);
+                            if (numberOfClicks > 1)
+                                incrementActionsCounter();
                             switch (preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next)) {
                                 case R.id.action2Pause3Next:
                                     if (numberOfClicks == 2)
