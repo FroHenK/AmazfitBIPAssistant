@@ -180,6 +180,7 @@ public class ConnectionService extends Service {
         Log.i("kek", "connecting to: " + preferences.getPrefString(getString(R.string.preferences_watch_address), "") + " | " + device);
         if (this.device == null)
             return;
+        device.createBond();
 
         bluetoothGatt = device.connectGatt(this, true, new BluetoothGattCallback() {
 
