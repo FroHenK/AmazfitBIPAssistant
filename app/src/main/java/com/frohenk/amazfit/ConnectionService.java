@@ -157,7 +157,9 @@ public class ConnectionService extends Service {
     }
 
     private void makeCall(String message) {
-
+        Bundle bundle = new Bundle();
+        bundle.putString("device_name", device.getName());
+        firebaseAnalytics.logEvent("emulated_call", bundle);
         for (BluetoothGattService serv : bluetoothGatt.getServices()) {
             BluetoothGattCharacteristic characteristic = serv.getCharacteristic(UUID.fromString("00002a46-0000-1000-8000-00805f9b34fb"));
             if (characteristic != null) {
@@ -165,9 +167,6 @@ public class ConnectionService extends Service {
                 characteristic.setValue(concat(new byte[]{3, 1}, message.getBytes()));
                 bluetoothGatt.writeCharacteristic(characteristic);
             }
-            Bundle bundle = new Bundle();
-            bundle.putString("device_name", device.getName());
-            firebaseAnalytics.logEvent("emulated_call", bundle);
         }
 
     }

@@ -149,21 +149,25 @@ public class ChooseWatchActivity extends AppCompatActivity {
         //devices.clear();
         refreshList();
         Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
-        bluetoothLeScanner.stopScan(scanCallback);
-        bluetoothLeScanner.startScan(scanCallback);
+        if (bluetoothLeScanner != null) {
+            bluetoothLeScanner.stopScan(scanCallback);
+            bluetoothLeScanner.startScan(scanCallback);
+        }
         tryFromForm();
         for (BluetoothDevice device : bondedDevices)
             try {
                 if (device.getType() == BluetoothDevice.DEVICE_TYPE_CLASSIC)
                     continue;
-
-                if (onDeviceDiscovered(device)) continue;
+                onDeviceDiscovered(device);
             } catch (Exception e) {
                 Log.e("kek1", "some error", e);
             }
     }
 
     private boolean onDeviceDiscovered(BluetoothDevice device) {
+        if (device == null)
+            return false;
+
         if (device.getBluetoothClass().toString().contains("1f00") || device.getName().toLowerCase().contains("band") || device.getName().toLowerCase().contains("amazfit") || device.getName().toLowerCase().contains("bip") || device.getName().toLowerCase().contains("watch")) {
             if (alreadyExplored.contains(device.getAddress()))
                 return true;
