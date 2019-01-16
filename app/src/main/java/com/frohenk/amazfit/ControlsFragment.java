@@ -79,13 +79,13 @@ public class ControlsFragment extends Fragment {
         preferences = new DPreference(getActivity(), getString(R.string.preference_file_key));
         radioGroup.check(preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next));
 
-        firebaseAnalytics.setUserProperty("multi_click_action", ((RadioButton) view.findViewById( preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next))).getText().toString());
+        firebaseAnalytics.setUserProperty("multi_click_action", ((RadioButton) view.findViewById(preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next))).getText().toString());
 
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 preferences.setPrefInt(getString(R.string.multiple_click_action), checkedId);
-                firebaseAnalytics.setUserProperty("multi_click_action", ((RadioButton) view.findViewById( preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next))).getText().toString());
+                firebaseAnalytics.setUserProperty("multi_click_action", ((RadioButton) view.findViewById(preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next))).getText().toString());
             }
         });
         delaySeekBar = view.findViewById(R.id.delaySeekBar);
@@ -163,6 +163,12 @@ public class ControlsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        radioGroup.check(preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next));
+        delaySeekBar.setProgress(preferences.getPrefInt(getString(R.string.multiple_delay), 1));
+        delayTextView.setText("" + (ConnectionService.DELAY_STEP * (1 + preferences.getPrefInt(getString(R.string.multiple_delay), 1))) + " ms");
+        longPressSwitch.setChecked(preferences.getPrefBoolean(getString(R.string.long_press_control), false));
+        googleAssistantSwitch.setChecked(preferences.getPrefBoolean(getString(R.string.long_press_googass), false));
+
     }
 
 
