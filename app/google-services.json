@@ -1,0 +1,57 @@
+{
+  "project_info": {
+    "project_number": "115074360476",
+    "firebase_url": "https://amazfitbipassistant.firebaseio.com",
+    "project_id": "amazfitbipassistant",
+    "storage_bucket": "amazfitbipassistant.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:115074360476:android:403448f2521707e4",
+        "android_client_info": {
+          "package_name": "com.frohenk.amazfit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "115074360476-irngvn5vilrtd7d9hon6bb070u62b0ko.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.frohenk.amazfit",
+            "certificate_hash": "44ff5007e239bab233f6d87258b361c5d577948c"
+          }
+        },
+        {
+          "client_id": "115074360476-hs44rabdcaods0ib7ovm07q4bl2dv6a9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.frohenk.amazfit",
+            "certificate_hash": "ca93eb067a4c14259dc4ff337092ec77c4736467"
+          }
+        },
+        {
+          "client_id": "115074360476-204bg3ubihj0t2dsvbs8iej64d7pssv4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD782vTH_bA_pPiXh2wMt11CrBw4m4ZTa0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "115074360476-204bg3ubihj0t2dsvbs8iej64d7pssv4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-5911662140305016~6930012303"
+    }
+  ],
+  "configuration_version": "1"
+}
