@@ -3,20 +3,20 @@
     <string name="tab_text_1">Alarms</string>
     <string name="tab_text_2">Controls</string>
     <string name="action_disconnect">Disconnect</string>
-    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="section_format" translatable="false">Hello World from section: %1$d</string>
 
     <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="preference_file_key">AMAZFIT</string>
-    <string name="preferences_watch_address">watch_address</string>
-    <string name="multiple_click_action">actionkek</string>
-    <string name="multiple_delay">okmygeadisspinning</string>
-     <string name="banner_id">ca-app-pub-5911662140305016/5042215561</string>
-    <!--<string name="banner_id">ca-app-pub-3940256099942544/6300978111</string>-->
-    <string name="long_press_control">long_press_kek</string>
-    <string name="long_press_googass">googass_lol</string>
-    <string name="num_uses">num_uses</string>
-    <string name="can_rate">can_rate</string>
+    <string name="hello_blank_fragment" translatable="false">Hello blank fragment</string>
+    <string name="preference_file_key" translatable="false">AMAZFIT</string>
+    <string name="preferences_watch_address" translatable="false">watch_address</string>
+    <string name="multiple_click_action" translatable="false">actionkek</string>
+    <string name="multiple_delay" translatable="false">okmygeadisspinning</string>
+     <string name="banner_id" translatable="false">ca-app-pub-5911662140305016/5042215561</string>
+    <!--<string name="banner_id" translatable="false">ca-app-pub-3940256099942544/6300978111</string>-->
+    <string name="long_press_control" translatable="false">long_press_kek</string>
+    <string name="long_press_googass" translatable="false">googass_lol</string>
+    <string name="num_uses" translatable="false">num_uses</string>
+    <string name="can_rate" translatable="false">can_rate</string>
     <string name="rate_app_question">Would you like to rate the app?</string>
     <string name="rate_later">Later</string>
     <string name="rate_rate">Rate</string>
