@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Amazfit BIP Assistant</string>
+    <string name="app_name">Amazfit BIP Ассистент</string>
     <string name="tab_text_1">Будильники</string>
     <string name="tab_text_2">Управление</string>
     <string name="action_disconnect">Отсоединиться</string>
