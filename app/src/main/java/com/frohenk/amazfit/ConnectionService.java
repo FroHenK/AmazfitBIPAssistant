@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -63,18 +64,26 @@ public class ConnectionService extends Service {
         return null;
     }
 
+    boolean tryingToConnect = false;
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         isActive = true;
         Log.i("kek", "service received start command");
-        if (bluetoothGatt != null)
-            bluetoothGatt.connect();
-        else {
+        if (bluetoothGatt != null) {
             try {
-                initBluetooth();
+                bluetoothGatt.connect();
+                return START_STICKY;
             } catch (Exception e) {
-                Log.e("kek", "some error while reconnecting BT init", e);
+                Log.e("kek", "some error while reconnecting BT GATT", e);
             }
+        }
+
+        try {
+            if (!tryingToConnect)
+                initBluetooth();
+        } catch (Exception e) {
+            Log.e("kek", "some error while reconnecting BT init", e);
         }
         return START_STICKY;
     }
@@ -171,208 +180,226 @@ public class ConnectionService extends Service {
 
     }
 
-    private void initBluetooth() {
+    private synchronized void initBluetooth() {
+        tryingToConnect = true;
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
 
 
         this.device = bluetoothAdapter.getRemoteDevice(preferences.getPrefString(getString(R.string.preferences_watch_address), ""));
         Log.i("kek", "connecting to: " + preferences.getPrefString(getString(R.string.preferences_watch_address), "") + " | " + device);
-        if (this.device == null)
+        if (this.device == null) {
+            Log.e("kek", "failed to find and connect to the device, device is null");
             return;
+        }
         device.createBond();
-
-        bluetoothGatt = device.connectGatt(this, true, new BluetoothGattCallback() {
-
-
-            private String charUuid = "00000010-0000-3512-2118-0009af100700";
-
-            @Override
-            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+        int connectionTries = 0;
+        bluetoothGatt = null;
+        while (bluetoothGatt == null) {
+            bluetoothGatt = device.connectGatt(this, true, new BluetoothGattCallback() {
 
 
-                switch (newState) {
-                    case STATE_CONNECTED:
-                        Log.i("kek", "device connected");
-                        gatt.discoverServices();
+                private String charUuid = "00000010-0000-3512-2118-0009af100700";
 
-                        builder.setContentTitle(getString(R.string.status_connected));
-                        notificationManager.notify(NOTIFICATION_ID, builder.build());
-                        break;
-                    case STATE_CONNECTING:
-                        Log.i("kek", "device connecting");
-                        isOperational = false;
-                        builder.setContentTitle(getString(R.string.status_connecting));
-                        notificationManager.notify(NOTIFICATION_ID, builder.build());
-                        break;
-                    case STATE_DISCONNECTING:
-                        isOperational = false;
-                        Log.i("kek", "device disconnecting");
-                        if (isActive) {
-                            builder.setContentTitle(getString(R.string.status_disconnecting));
+                @Override
+                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+
+
+                    switch (newState) {
+                        case STATE_CONNECTED:
+                            Log.i("kek", "device connected");
+                            gatt.discoverServices();
+
+                            builder.setContentTitle(getString(R.string.status_connected));
                             notificationManager.notify(NOTIFICATION_ID, builder.build());
-                        }
-                        break;
-                    case STATE_DISCONNECTED:
-                        Log.i("kek", "device disconnected");
-                        isOperational = false;
-                        if (isActive) {
-                            builder.setContentTitle(getString(R.string.status_disconnected));
+                            break;
+                        case STATE_CONNECTING:
+                            Log.i("kek", "device connecting");
+                            isOperational = false;
+                            builder.setContentTitle(getString(R.string.status_connecting));
                             notificationManager.notify(NOTIFICATION_ID, builder.build());
-                            bluetoothGatt.connect();
-                        }
-                        break;
+                            break;
+                        case STATE_DISCONNECTING:
+                            isOperational = false;
+                            Log.i("kek", "device disconnecting");
+                            if (isActive) {
+                                builder.setContentTitle(getString(R.string.status_disconnecting));
+                                notificationManager.notify(NOTIFICATION_ID, builder.build());
+                            }
+                            break;
+                        case STATE_DISCONNECTED:
+                            Log.i("kek", "device disconnected");
+                            isOperational = false;
+                            if (isActive) {
+                                builder.setContentTitle(getString(R.string.status_disconnected));
+                                notificationManager.notify(NOTIFICATION_ID, builder.build());
+                                try {
+                                    bluetoothGatt.disconnect();
+                                    bluetoothGatt.close();
+                                } catch (Exception e) {
+                                    Log.e("kek", "error while terminating BT GATT", e);
+                                }
+                                initBluetooth();
+                            }
+                            break;
 
+
+                    }
 
                 }
 
-            }
+                @Override
+                public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                    super.onServicesDiscovered(gatt, status);
+                    isOperational = true;
 
-            @Override
-            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                super.onServicesDiscovered(gatt, status);
-                isOperational = true;
+                    BluetoothGattCharacteristic charNotification = null;
+                    BluetoothGattCharacteristic charCallback = null;
 
-                BluetoothGattCharacteristic charNotification = null;
-                BluetoothGattCharacteristic charCallback = null;
+                    for (BluetoothGattService serv : gatt.getServices()) {
+                        if (serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700")) != null) {
+                            charCallback = serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
 
-                for (BluetoothGattService serv : gatt.getServices()) {
-                    if (serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700")) != null) {
-                        charCallback = serv.getCharacteristic(UUID.fromString("00000010-0000-3512-2118-0009af100700"));
+                            gatt.setCharacteristicNotification(charCallback, true);
 
-                        gatt.setCharacteristicNotification(charCallback, true);
-
-                        for (BluetoothGattDescriptor descriptor : charCallback.getDescriptors()) {
-                            Log.i("kek", serv.getUuid().toString() + " | " + charCallback.getUuid().toString() + " | " + descriptor.getUuid().toString());
-                            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                            gatt.writeDescriptor(descriptor);
+                            for (BluetoothGattDescriptor descriptor : charCallback.getDescriptors()) {
+                                Log.i("kek", serv.getUuid().toString() + " | " + charCallback.getUuid().toString() + " | " + descriptor.getUuid().toString());
+                                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                                gatt.writeDescriptor(descriptor);
+                            }
                         }
                     }
+
+
+                    Log.i("kek", "services successfully discovered");
                 }
 
+                @Override
+                public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                    super.onCharacteristicRead(gatt, characteristic, status);
+                }
 
-                Log.i("kek", "services successfully discovered");
-            }
+                @Override
+                public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                    super.onDescriptorWrite(gatt, descriptor, status);
 
-            @Override
-            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                super.onCharacteristicRead(gatt, characteristic, status);
-            }
+                }
 
-            @Override
-            public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                super.onDescriptorWrite(gatt, descriptor, status);
-
-            }
-
-            @Override
-            public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-                super.onCharacteristicChanged(gatt, characteristic);
-                if (!characteristic.getUuid().toString().equalsIgnoreCase(charUuid))
-                    return;
-                Log.i("kek", "Received data: " + String.valueOf(characteristic.getValue()[0]));
-
-
-                if (preferences.getPrefBoolean(getString(R.string.long_press_control), false)) {
-                    if (characteristic.getValue()[0] == 11) {
-                        startVolumeControl();
-                    }
-                    if (inVolumeControl) {
-                        switch (characteristic.getValue()[0]) {
-                            case 4:
-                                inVolumeControl = false;
-                                multipleClickHandler.removeCallbacksAndMessages(null);
-                                break;
-                            case 7:
-                                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
-                                        AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
-                                incrementActionsCounter();
-                                break;
-                            case 9:
-                                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
-                                        AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
-                                incrementActionsCounter();
-                                break;
-
-                        }
-
+                @Override
+                public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+                    super.onCharacteristicChanged(gatt, characteristic);
+                    if (!characteristic.getUuid().toString().equalsIgnoreCase(charUuid))
                         return;
-                    }
-
-                }
+                    Log.i("kek", "Received data: " + String.valueOf(characteristic.getValue()[0]));
 
 
-                if (preferences.getPrefBoolean(getString(R.string.long_press_googass), false) && characteristic.getValue()[0] == 11) {
-                    incrementActionsCounter();
-                    startActivity(new Intent(Intent.ACTION_VOICE_COMMAND).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                }
-
-
-                if (characteristic.getValue()[0] == 4) {
-                    numberOfClicks++;
-                    multipleClickHandler.removeCallbacksAndMessages(null);
-                    multipleClickHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.i("kek", "Number of clicks: " + numberOfClicks);
-                            if (numberOfClicks > 1)
-                                incrementActionsCounter();
-                            switch (preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next)) {
-                                case R.id.action2Pause3Next:
-                                    if (numberOfClicks == 2)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                    if (numberOfClicks == 3)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                    if (preferences.getPrefBoolean(getString(R.string.long_press_control), false)) {
+                        if (characteristic.getValue()[0] == 11) {
+                            startVolumeControl();
+                        }
+                        if (inVolumeControl) {
+                            switch (characteristic.getValue()[0]) {
+                                case 4:
+                                    inVolumeControl = false;
+                                    multipleClickHandler.removeCallbacksAndMessages(null);
                                     break;
-                                case R.id.action2Previous3Next:
-                                    if (numberOfClicks == 2)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                    if (numberOfClicks == 3)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                case 7:
+                                    audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
+                                            AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+                                    incrementActionsCounter();
                                     break;
-
-                                case R.id.action2Next3Previous:
-                                    if (numberOfClicks == 2)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                    if (numberOfClicks == 3)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                case 9:
+                                    audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
+                                            AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+                                    incrementActionsCounter();
                                     break;
-
-                                case R.id.action2Pause3Next4Previous:
-                                    if (numberOfClicks == 2)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                    if (numberOfClicks == 3)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                    if (numberOfClicks == 4)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                    break;
-
-                                case R.id.action2Previous3Pause4Next:
-                                    if (numberOfClicks == 2)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                    if (numberOfClicks == 3)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                    if (numberOfClicks == 4)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                    break;
-
-                                case R.id.action2Pause3Previous4Next:
-                                    if (numberOfClicks == 2)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                    if (numberOfClicks == 3)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                    if (numberOfClicks == 4)
-                                        mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                    break;
-
 
                             }
-                            numberOfClicks = 0;
+
+                            return;
                         }
-                    }, preferences.getPrefInt(getString(R.string.multiple_delay), 1) * DELAY_STEP + DELAY_STEP);
+
+                    }
+
+
+                    if (preferences.getPrefBoolean(getString(R.string.long_press_googass), false) && characteristic.getValue()[0] == 11) {
+                        incrementActionsCounter();
+                        startActivity(new Intent(Intent.ACTION_VOICE_COMMAND).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    }
+
+
+                    if (characteristic.getValue()[0] == 4) {
+                        numberOfClicks++;
+                        multipleClickHandler.removeCallbacksAndMessages(null);
+                        multipleClickHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.i("kek", "Number of clicks: " + numberOfClicks);
+                                if (numberOfClicks > 1)
+                                    incrementActionsCounter();
+                                switch (preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next)) {
+                                    case R.id.action2Pause3Next:
+                                        if (numberOfClicks == 2)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                        if (numberOfClicks == 3)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                        break;
+                                    case R.id.action2Previous3Next:
+                                        if (numberOfClicks == 2)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                        if (numberOfClicks == 3)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                        break;
+
+                                    case R.id.action2Next3Previous:
+                                        if (numberOfClicks == 2)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                        if (numberOfClicks == 3)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                        break;
+
+                                    case R.id.action2Pause3Next4Previous:
+                                        if (numberOfClicks == 2)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                        if (numberOfClicks == 3)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                        if (numberOfClicks == 4)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                        break;
+
+                                    case R.id.action2Previous3Pause4Next:
+                                        if (numberOfClicks == 2)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                        if (numberOfClicks == 3)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                        if (numberOfClicks == 4)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                        break;
+
+                                    case R.id.action2Pause3Previous4Next:
+                                        if (numberOfClicks == 2)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                        if (numberOfClicks == 3)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                        if (numberOfClicks == 4)
+                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                        break;
+
+
+                                }
+                                numberOfClicks = 0;
+                            }
+                        }, preferences.getPrefInt(getString(R.string.multiple_delay), 1) * DELAY_STEP + DELAY_STEP);
+                    }
                 }
-            }
-        });
+            });
+            if (connectionTries < 300)
+                SystemClock.sleep(1000);
+            else
+                SystemClock.sleep(1000 * 60 * 10);//then try it every five minutes
+
+            connectionTries++;
+        }
+        tryingToConnect = false;
     }
 
     private void startVolumeControl() {
