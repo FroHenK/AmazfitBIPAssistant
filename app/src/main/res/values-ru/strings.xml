@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Amazfit BIP Assistant</string>
+    <string name="tab_text_1">Будильники</string>
+    <string name="tab_text_2">Управление</string>
+    <string name="action_disconnect">Отсоединиться</string>
+    <string name="rate_app_question">Не могли бы вы поставить оценку приложению?</string>
+    <string name="rate_later">Позже</string>
+    <string name="rate_rate">Оценить</string>
+    <string name="rate_never">Никогда!</string>
+    <string name="status_disconnected">Отсоединено</string>
+    <string name="status_disconnecting">Отсоединение</string>
+    <string name="status_connecting">Соединение</string>
+    <string name="status_connected">Соединено</string>
+    <string name="if_watch_not_visible"><![CDATA[Если часов нет в списке введите их адрес из Mi-Fit->Amazfit Bip->Bluetooth Address или из About в настройках самих часов]]></string>
+    <string name="bluetooth_address">Bluetooth Адрес</string>
+    <string name="refresh">Обновить</string>
+    <string name="no_devices_found">Не были найдены совместимые Amazfit Bip устройства</string>
+    <string name="_2_pause_3_next">2 Пауза 3 Вперед</string>
+    <string name="_2_previous_3_next">2 Назад 3 Вперед</string>
+    <string name="_2_next_3_previous">2 Вперед 3 Назад</string>
+    <string name="_2_pause_3_next_4_previous">2 Пауза 3 Вперед 4 Назад</string>
+    <string name="_2_previous_3_pause_4_next">2 Назад 3 Пауза 4 Вперед</string>
+    <string name="_2_pause_3_previous_4_next">2 Пауза 3 Назад 4 Вперед</string>
+    <string name="no_action">Без действия</string>
+    <string name="multiple_button_click_actions">Действие при многократном нажатии</string>
+    <string name="interval_between_multiple_clicks">Интервал между несколькими нажатиями</string>
+    <string name="enable_long_press_volume_control">Управление громкостью при долгом нажатии</string>
+    <string name="enable_long_press_google_assistant_start">Google Assistant при долгом нажатии</string>
+    <string name="long_press_volume_explanation"><![CDATA[Settings->Long button press должно быть \'Turn Off\' в самих часах BIP. Нажмите Hang Up для уменьшения звука, Ignore для увеличения звука, кнопку часов для отмены. Не работает, если DND (Do not disturb) включено на часах]]></string>
+</resources>
