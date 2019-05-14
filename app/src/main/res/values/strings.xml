@@ -25,4 +25,20 @@
     <string name="status_disconnecting">Disconnecting</string>
     <string name="status_connecting">Connecting</string>
     <string name="status_connected">Connected</string>
+    <string name="if_watch_not_visible"><![CDATA[If watch is not in the list enter its Bluetooth address from Mi-Fit->Amazfit Bip->Bluetooth Address]]></string>
+    <string name="bluetooth_address">Bluetooth Address</string>
+    <string name="refresh">Refresh</string>
+    <string name="no_devices_found">No compatible Amazfit Bip devices were found</string>
+    <string name="_2_pause_3_next">2 Pause 3 Next</string>
+    <string name="_2_previous_3_next">2 Previous 3 Next</string>
+    <string name="_2_next_3_previous">2 Next 3 Previous</string>
+    <string name="_2_pause_3_next_4_previous">2 Pause 3 Next 4 Previous</string>
+    <string name="_2_previous_3_pause_4_next">2 Previous 3 Pause 4 Next</string>
+    <string name="_2_pause_3_previous_4_next">2 Pause 3 Previous 4 Next</string>
+    <string name="no_action">No action</string>
+    <string name="multiple_button_click_actions">Multiple button click actions</string>
+    <string name="interval_between_multiple_clicks">Interval between multiple clicks</string>
+    <string name="enable_long_press_volume_control">Enable long press volume control</string>
+    <string name="enable_long_press_google_assistant_start">Enable long press Google Assistant start</string>
+    <string name="long_press_volume_explanation"><![CDATA[Settings->Long button press should be \'Turn Off\' on BIP. Click Hang up to reduce volume, click Ignore to increase volume, click watch button to cancel. Will not work if DND mode is on]]></string>
 </resources>
