@@ -9,8 +9,8 @@ android {
         applicationId "com.frohenk.amazfit"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 16
-        versionName "4.6fix"
+        versionCode 17
+        versionName "4.8fix"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
