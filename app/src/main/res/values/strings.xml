@@ -3,6 +3,7 @@
     <string name="tab_text_1">Alarms</string>
     <string name="tab_text_2">Controls</string>
     <string name="action_disconnect">Disconnect</string>
+    <string name="action_remove_ads">Remove ads</string>
     <string name="section_format" translatable="false">Hello World from section: %1$d</string>
 
     <!-- TODO: Remove or change this placeholder text -->

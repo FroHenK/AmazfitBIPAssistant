@@ -3,6 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.frohenk.amazfit.MainActivity">
     <item
+        android:id="@+id/action_remove_ads"
+        android:orderInCategory="100"
+        android:title="@string/action_remove_ads"
+        android:enabled="false"
+        android:visible="false"
+        android:icon="@drawable/no_ads"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_disconnect"
         android:orderInCategory="100"
         android:title="@string/action_disconnect"

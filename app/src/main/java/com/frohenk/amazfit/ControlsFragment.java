@@ -18,6 +18,10 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
 import me.dozen.dpreference.DPreference;
 
 public class ControlsFragment extends Fragment {
@@ -32,7 +36,7 @@ public class ControlsFragment extends Fragment {
     private DPreference preferences;
     private SeekBar delaySeekBar;
     private TextView delayTextView;
-    private AdView adView;
+    public AdView adView;
     private Switch longPressSwitch;
     private Switch googleAssistantSwitch;
     private FirebaseAnalytics firebaseAnalytics;
@@ -59,6 +63,19 @@ public class ControlsFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
+    }
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -146,18 +163,38 @@ public class ControlsFragment extends Fragment {
 
         adView = view.findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder()
-                .addTestDevice("EA6F5EDBBC1D0C4A6088CB46CD5D9FE1")
+//                .addTestDevice("EA6F5EDBBC1D0C4A6088CB46CD5D9FE1")
+                .addTestDevice("071ED2839CF29BB75C4EB07BD674DF21")
                 .build();
-        adView.loadAd(adRequest);
+        if (!preferences.getPrefBoolean(MainActivity.REMOVE_ADS_PURCHASED, false)) {
+            adView.loadAd(adRequest);
+        } else {
+            adView.setVisibility(View.GONE);
+        }
         adView.setAdListener(new AdListener() {
             @Override
             public void onAdFailedToLoad(int i) {
-                Log.i("Ads", "no AdMob ad :(");
+                Log.i("Ads", "no AdMob ad :( code: " + i);
             }
         });
 
 
         return view;
+    }
+
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(String viewEvent) {
+        if (viewEvent.equals("UPDATE")) {
+            DPreference preference = new DPreference(getActivity(), getString(R.string.preference_file_key));
+            if (preferences.getPrefBoolean(MainActivity.REMOVE_ADS_PURCHASED, false)) {
+                Log.i("kek", "disabling ads in fragment");
+                adView.setVisibility(View.GONE);
+                adView.setEnabled(false);
+            }
+        }
+
+
     }
 
     @Override

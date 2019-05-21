@@ -27,4 +27,5 @@
     <string name="enable_long_press_volume_control">Управление громкостью при долгом нажатии</string>
     <string name="enable_long_press_google_assistant_start">Google Assistant при долгом нажатии</string>
     <string name="long_press_volume_explanation"><![CDATA[Settings->Long button press должно быть \'Turn Off\' в самих часах BIP. Нажмите Hang Up для уменьшения звука, Ignore для увеличения звука, кнопку часов для отмены. Не работает, если DND (Do not disturb) включено на часах]]></string>
+    <string name="action_remove_ads">Убрать рекламу</string>
 </resources>

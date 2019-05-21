@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -14,16 +15,38 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 
+import com.android.billingclient.api.AcknowledgePurchaseParams;
+import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
+import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.BillingClientStateListener;
+import com.android.billingclient.api.BillingFlowParams;
+import com.android.billingclient.api.BillingResult;
+import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchasesUpdatedListener;
+import com.android.billingclient.api.SkuDetails;
+import com.android.billingclient.api.SkuDetailsParams;
+import com.android.billingclient.api.SkuDetailsResponseListener;
 import com.google.android.gms.ads.MobileAds;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
+import org.greenrobot.eventbus.EventBus;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
 import me.dozen.dpreference.DPreference;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PurchasesUpdatedListener {
 
+    public static final String REMOVE_ADS_SKU = "remove_ads";
+    public static final String REMOVE_ADS_PURCHASED = "remove_ads_purchased";
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
      * fragments for each of the sections. We use a
@@ -40,10 +63,15 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager mViewPager;
     private FloatingActionButton fab;
     private FirebaseAnalytics firebaseAnalytics;
+    private BillingClient billingClient;
+    private Menu menu;
+    private MenuItem removeAdsMenuItem;
+    private SkuDetails removeAdsSkuDetails;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         firebaseAnalytics = FirebaseAnalytics.getInstance(this);
         MobileAds.initialize(this, "ca-app-pub-5911662140305016~6930012303");
@@ -56,6 +84,30 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Intent intent = new Intent(this, ConnectionService.class);
             startService(intent);
+            if (preference.getPrefBoolean(REMOVE_ADS_PURCHASED, false))
+                disableAds();
+            billingClient = BillingClient.newBuilder(this).enablePendingPurchases().setListener(this).build();//TODO support pending stuff
+            billingClient.startConnection(new BillingClientStateListener() {
+                @Override
+                public void onBillingSetupFinished(BillingResult billingResult) {
+                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                        Log.i("kek", "onBillingSetupFinished() response: " + billingResult.getResponseCode());
+                        handleManagerAndUiReady();
+                        List<Purchase> purchasesList = billingClient.queryPurchases(BillingClient.SkuType.INAPP).getPurchasesList();
+                        for (Purchase purchase :
+                                purchasesList) {
+                            handlePurchase(purchase);
+                        }
+                    } else {
+                        Log.w("kek", "onBillingSetupFinished() error code: " + billingResult.getResponseCode());
+                    }
+                }
+
+                @Override
+                public void onBillingServiceDisconnected() {
+                    Log.w("kek", "onBillingServiceDisconnected()");
+                }
+            });
         }
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -139,13 +191,31 @@ public class MainActivity extends AppCompatActivity {
 
             builder.show();
         }
+
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try {
+            if (billingClient.isReady()) {
+                List<Purchase> purchasesList = billingClient.queryPurchases(BillingClient.SkuType.INAPP).getPurchasesList();
+                for (Purchase purchase :
+                        purchasesList) {
+                    handlePurchase(purchase);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("kek", "error on crap", e);
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        this.menu = menu;
+        getMenuInflater().inflate(R.menu.menu_main, this.menu);
+        removeAdsMenuItem = menu.findItem(R.id.action_remove_ads);
         return true;
     }
 
@@ -168,15 +238,123 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        if (id == R.id.action_remove_ads) {
+            Log.i("kek", "remove ads pressed");
+            BillingFlowParams flowParams = BillingFlowParams.newBuilder()
+                    .setSkuDetails(removeAdsSkuDetails)
+                    .build();
+            BillingResult billingResult = billingClient.launchBillingFlow(this, flowParams);
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
+    public void disableAds() {
+        Log.i("kek", "disableAds()");
+        if (removeAdsMenuItem != null) {
+            removeAdsMenuItem.setVisible(false);
+            removeAdsMenuItem.setEnabled(false);
+        }
+        DPreference preference = new DPreference(this, getString(R.string.preference_file_key));
+        preference.setPrefBoolean(REMOVE_ADS_PURCHASED, true);
+
+        try {
+            EventBus.getDefault().post("UPDATE");
+        } catch (Exception e) {
+            Log.e("kek", "error on crap", e);
+        }
+    }
+
+    @Override
+    public void onPurchasesUpdated(BillingResult billingResult, @Nullable List<Purchase> purchases) {
+        Log.d("kek", "onPurchasesUpdated() response: " + billingResult.getResponseCode());
+        if (purchases != null) {
+            for (Purchase purchase :
+                    purchases) {
+                handlePurchase(purchase);
+
+            }
+        }
+    }
+
+    private void handlePurchase(Purchase purchase) {
+        if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED && purchase.getSku().equals(REMOVE_ADS_SKU)) {
+            disableAds();
+            Log.i("kek", "purchase is acknowledged: " + purchase.isAcknowledged());
+            if (!purchase.isAcknowledged()) {
+                AcknowledgePurchaseParams acknowledgePurchaseParams =
+                        AcknowledgePurchaseParams.newBuilder()
+                                .setPurchaseToken(purchase.getPurchaseToken())
+                                .build();
+                billingClient.acknowledgePurchase(acknowledgePurchaseParams, new AcknowledgePurchaseResponseListener() {
+                    @Override
+                    public void onAcknowledgePurchaseResponse(BillingResult billingResult) {
+                        Log.i("kek", "onAcknowledgePurchaseResponse() result: " + billingResult.getResponseCode() + " " + billingResult.getDebugMessage());
+                    }
+                });
+            }
+        }
+        if (purchase.getPurchaseState() == Purchase.PurchaseState.PENDING && purchase.getSku().equals(REMOVE_ADS_SKU))
+            Toast.makeText(this, "No idea, how you managed to make a pending purchase, I thought it was impossible. I need to know, write me an email or leave a review!", Toast.LENGTH_LONG).show();
+    }
+
+    private static final HashMap<String, List<String>> SKUS;
+
+    static {
+        SKUS = new HashMap<>();
+        SKUS.put(BillingClient.SkuType.INAPP, Arrays.asList("remove_ads"));
+    }
+
+    public List<String> getSkus(@BillingClient.SkuType String type) {
+        return SKUS.get(type);
+    }
+
+    public void querySkuDetailsAsync(@BillingClient.SkuType final String itemType,
+                                     final List<String> skuList, final SkuDetailsResponseListener listener) {
+        SkuDetailsParams skuDetailsParams = SkuDetailsParams.newBuilder()
+                .setSkusList(skuList).setType(itemType).build();
+        billingClient.querySkuDetailsAsync(skuDetailsParams,
+                new SkuDetailsResponseListener() {
+                    @Override
+                    public void onSkuDetailsResponse(BillingResult billingResult, List<SkuDetails> skuDetailsList) {
+                        listener.onSkuDetailsResponse(billingResult, skuDetailsList);
+                    }
+                });
+    }
+
+    private void handleManagerAndUiReady() {
+        List<String> inAppSkus = getSkus(BillingClient.SkuType.INAPP);
+        querySkuDetailsAsync(BillingClient.SkuType.INAPP,
+                inAppSkus,
+                new SkuDetailsResponseListener() {
+                    @Override
+                    public void onSkuDetailsResponse(BillingResult billingResult, List<SkuDetails> skuDetailsList) {
+                        if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK
+                                && skuDetailsList != null) {
+                            for (SkuDetails details : skuDetailsList) {
+                                Log.w("kek", "Got a SKU: " + details);
+                                if (details.getSku().equals(REMOVE_ADS_SKU)) {
+                                    DPreference preference = new DPreference(MainActivity.this, getString(R.string.preference_file_key));
+                                    boolean adsRemoved = preference.getPrefBoolean(REMOVE_ADS_PURCHASED, false);
+
+                                    if (!adsRemoved) {
+                                        removeAdsMenuItem.setVisible(true);
+                                        removeAdsMenuItem.setEnabled(true);
+                                    }
+                                    removeAdsSkuDetails = details;
+                                }
+                            }
+                        }
+                    }
+                });
+    }
 
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
      */
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
+
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -186,9 +364,9 @@ public class MainActivity extends AppCompatActivity {
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
-            if (position == 0)
+            if (position == 0) {
                 return ControlsFragment.newInstance("1", "2");
-            else
+            } else
                 return AlarmsFragment.newInstance("1", "2");
         }
 

@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "115074360476-jkre1ut3nhjiolnojbu3ophm5prpk7vt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.frohenk.amazfit",
+            "certificate_hash": "c5b1362b4df4fcbb07d139d716d3cc862785ef64"
+          }
+        },
+        {
           "client_id": "115074360476-irngvn5vilrtd7d9hon6bb070u62b0ko.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
