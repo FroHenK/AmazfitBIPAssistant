@@ -26,7 +26,6 @@ import android.view.KeyEvent;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
 import java.util.Arrays;
-import java.util.Set;
 import java.util.UUID;
 
 import me.dozen.dpreference.DPreference;
@@ -79,12 +78,18 @@ public class ConnectionService extends Service {
             }
         }
 
-        try {
-            if (!tryingToConnect)
-                initBluetooth();
-        } catch (Exception e) {
-            Log.e("kek", "some error while reconnecting BT init", e);
-        }
+        if (!tryingToConnect)
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        initBluetooth();
+                    } catch (Exception e) {
+                        Log.e("kek", "some error while reconnecting BT init", e);
+                    }
+                }
+            }).start();
+
         return START_STICKY;
     }
 
@@ -142,12 +147,20 @@ public class ConnectionService extends Service {
         notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         ;
         startForeground(NOTIFICATION_ID, notification);
-        try {
-            initBluetooth();
-        } catch (Exception e) {
-            Log.e("kek", "some error while BT init", e.getCause());
-        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    initBluetooth();
+                } catch (Exception e) {
+                    Log.e("kek", "some error while reconnecting BT init", e);
+                }
+            }
+        }).start();
     }
+
+    public static final String BASE_UUID = "0000%s-0000-1000-8000-00805f9b34fb";
 
     public static UUID convertFromInteger(int i) {
         final long MSB = 0x0000000000001000L;
@@ -177,7 +190,17 @@ public class ConnectionService extends Service {
                 bluetoothGatt.writeCharacteristic(characteristic);
             }
         }
+    }
 
+    private void vibrate() {
+        for (BluetoothGattService serv : bluetoothGatt.getServices()) {
+            BluetoothGattCharacteristic characteristic = serv.getCharacteristic(UUID.fromString(String.format(BASE_UUID, "2A06")));
+            if (characteristic != null) {
+                Log.i("kek", "vibrating on: " + serv.getUuid() + " | " + characteristic.getUuid());
+                characteristic.setValue(new byte[]{-1, 100, 0, 100, 0, 1});
+                bluetoothGatt.writeCharacteristic(characteristic);
+            }
+        }
     }
 
     private synchronized void initBluetooth() {
@@ -238,7 +261,16 @@ public class ConnectionService extends Service {
                                 } catch (Exception e) {
                                     Log.e("kek", "error while terminating BT GATT", e);
                                 }
-                                initBluetooth();
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            initBluetooth();
+                                        } catch (Exception e) {
+                                            Log.e("kek", "wtf", e);
+                                        }
+                                    }
+                                }).start();
                             }
                             break;
 
@@ -322,9 +354,15 @@ public class ConnectionService extends Service {
 
 
                     if (preferences.getPrefBoolean(getString(R.string.long_press_googass), false) && characteristic.getValue()[0] == 11) {
+                        vibrate();
                         incrementActionsCounter();
                         startActivity(new Intent(Intent.ACTION_VOICE_COMMAND).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                     }
+
+//                    if (preferences.getPrefBoolean(getString(R.string.take_pic), true)) {
+//                        Instrumentation inst = new Instrumentation();
+//                        inst.sendKeyDownUpSync(KeyEvent.KEYCODE_CAMERA);
+//                    }
 
 
                     if (characteristic.getValue()[0] == 4) {

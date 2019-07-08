@@ -42,4 +42,5 @@
     <string name="enable_long_press_volume_control">Enable long press volume control</string>
     <string name="enable_long_press_google_assistant_start">Enable long press Google Assistant start</string>
     <string name="long_press_volume_explanation"><![CDATA[Settings->Long button press should be \'Turn Off\' on BIP. Click Hang up to reduce volume, click Ignore to increase volume, click watch button to cancel. Will not work if DND mode is on]]></string>
+    <string name="take_pic">take_pic</string>
 </resources>
