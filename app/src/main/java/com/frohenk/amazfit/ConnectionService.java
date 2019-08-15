@@ -36,6 +36,7 @@ import static android.bluetooth.BluetoothAdapter.STATE_DISCONNECTED;
 import static android.bluetooth.BluetoothAdapter.STATE_DISCONNECTING;
 
 public class ConnectionService extends Service {
+    public static final int ACTION_DELAY = 5;
     private boolean isActive;
     public static final String CHANNEL_ID = "KEKID";
     public static final int NOTIFICATION_ID = 228;
@@ -44,7 +45,6 @@ public class ConnectionService extends Service {
     private BluetoothGatt bluetoothGatt;
     private boolean isOperational;
     private Handler multipleClickHandler;
-    private Handler volumeControlHandler;
     private DPreference preferences;
     private Notification.Builder builder;
     private NotificationManager notificationManager;
@@ -120,7 +120,6 @@ public class ConnectionService extends Service {
         audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         preferences = new DPreference(this, getString(R.string.preference_file_key));
         multipleClickHandler = new Handler();
-        volumeControlHandler = new Handler();
         Log.i("kek", "service onCreate starting");
         createNotificationChannel();
         Intent notificationIntent = new Intent(this, MainActivity.class);
@@ -170,7 +169,6 @@ public class ConnectionService extends Service {
     }
 
     private BluetoothDevice device;
-    private int numberOfClicks = 0;
 
     public static byte[] concat(byte[] first, byte[] second) {
         byte[] result = Arrays.copyOf(first, first.length + second.length);
@@ -203,6 +201,8 @@ public class ConnectionService extends Service {
         }
     }
 
+    private long lastActionTime = 0;
+
     private synchronized void initBluetooth() {
         tryingToConnect = true;
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -220,6 +220,7 @@ public class ConnectionService extends Service {
         while (bluetoothGatt == null) {
             bluetoothGatt = device.connectGatt(this, true, new BluetoothGattCallback() {
 
+                private int numberOfClicks = 0;
 
                 private String charUuid = "00000010-0000-3512-2118-0009af100700";
 
@@ -326,7 +327,10 @@ public class ConnectionService extends Service {
 
                     if (preferences.getPrefBoolean(getString(R.string.long_press_control), false)) {
                         if (characteristic.getValue()[0] == 11) {
-                            startVolumeControl();
+                            if (System.currentTimeMillis() - lastActionTime >= ACTION_DELAY) {
+                                lastActionTime = System.currentTimeMillis();
+                                startVolumeControl();
+                            }
                         }
                         if (inVolumeControl) {
                             switch (characteristic.getValue()[0]) {
@@ -335,14 +339,20 @@ public class ConnectionService extends Service {
                                     multipleClickHandler.removeCallbacksAndMessages(null);
                                     break;
                                 case 7:
-                                    audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
-                                            AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
-                                    incrementActionsCounter();
+                                    if (System.currentTimeMillis() - lastActionTime >= ACTION_DELAY) {
+                                        lastActionTime = System.currentTimeMillis();
+                                        audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
+                                                AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+                                        incrementActionsCounter();
+                                    }
                                     break;
                                 case 9:
-                                    audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
-                                            AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
-                                    incrementActionsCounter();
+                                    if (System.currentTimeMillis() - lastActionTime >= ACTION_DELAY) {
+                                        lastActionTime = System.currentTimeMillis();
+                                        audio.adjustStreamVolume(AudioManager.STREAM_MUSIC,
+                                                AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+                                        incrementActionsCounter();
+                                    }
                                     break;
 
                             }
@@ -354,9 +364,12 @@ public class ConnectionService extends Service {
 
 
                     if (preferences.getPrefBoolean(getString(R.string.long_press_googass), false) && characteristic.getValue()[0] == 11) {
-                        vibrate();
-                        incrementActionsCounter();
-                        startActivity(new Intent(Intent.ACTION_VOICE_COMMAND).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                        if (System.currentTimeMillis() - lastActionTime >= ACTION_DELAY) {
+                            lastActionTime = System.currentTimeMillis();
+                            vibrate();
+                            incrementActionsCounter();
+                            startActivity(new Intent(Intent.ACTION_VOICE_COMMAND).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                        }
                     }
 
 //                    if (preferences.getPrefBoolean(getString(R.string.take_pic), true)) {
@@ -371,58 +384,61 @@ public class ConnectionService extends Service {
                         multipleClickHandler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                Log.i("kek", "Number of clicks: " + numberOfClicks);
-                                if (numberOfClicks > 1)
-                                    incrementActionsCounter();
-                                switch (preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next)) {
-                                    case R.id.action2Pause3Next:
-                                        if (numberOfClicks == 2)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                        if (numberOfClicks == 3)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                        break;
-                                    case R.id.action2Previous3Next:
-                                        if (numberOfClicks == 2)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                        if (numberOfClicks == 3)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                        break;
+                                if (System.currentTimeMillis() - lastActionTime >= ACTION_DELAY) {
+                                    lastActionTime = System.currentTimeMillis();
+                                    Log.i("kek", "Number of clicks: " + numberOfClicks);
+                                    if (numberOfClicks > 1)
+                                        incrementActionsCounter();
+                                    switch (preferences.getPrefInt(getString(R.string.multiple_click_action), R.id.action2Pause3Next)) {
+                                        case R.id.action2Pause3Next:
+                                            if (numberOfClicks == 2)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                            if (numberOfClicks == 3)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                            break;
+                                        case R.id.action2Previous3Next:
+                                            if (numberOfClicks == 2)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                            if (numberOfClicks == 3)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                            break;
 
-                                    case R.id.action2Next3Previous:
-                                        if (numberOfClicks == 2)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                        if (numberOfClicks == 3)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                        break;
+                                        case R.id.action2Next3Previous:
+                                            if (numberOfClicks == 2)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                            if (numberOfClicks == 3)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                            break;
 
-                                    case R.id.action2Pause3Next4Previous:
-                                        if (numberOfClicks == 2)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                        if (numberOfClicks == 3)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                        if (numberOfClicks == 4)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                        break;
+                                        case R.id.action2Pause3Next4Previous:
+                                            if (numberOfClicks == 2)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                            if (numberOfClicks == 3)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                            if (numberOfClicks == 4)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                            break;
 
-                                    case R.id.action2Previous3Pause4Next:
-                                        if (numberOfClicks == 2)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                        if (numberOfClicks == 3)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                        if (numberOfClicks == 4)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                        break;
+                                        case R.id.action2Previous3Pause4Next:
+                                            if (numberOfClicks == 2)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                            if (numberOfClicks == 3)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                            if (numberOfClicks == 4)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                            break;
 
-                                    case R.id.action2Pause3Previous4Next:
-                                        if (numberOfClicks == 2)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
-                                        if (numberOfClicks == 3)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
-                                        if (numberOfClicks == 4)
-                                            mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
-                                        break;
+                                        case R.id.action2Pause3Previous4Next:
+                                            if (numberOfClicks == 2)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                                            if (numberOfClicks == 3)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                                            if (numberOfClicks == 4)
+                                                mediaButtonControl(KeyEvent.KEYCODE_MEDIA_NEXT);
+                                            break;
 
 
+                                    }
                                 }
                                 numberOfClicks = 0;
                             }
